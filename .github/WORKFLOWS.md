@@ -121,17 +121,8 @@ ghcr.io/dingdangmaoup/station:sha-abc123
 
 | Secret | 用途 | 配置位置 |
 |--------|------|----------|
-| `SONAR_TOKEN` | SonarCloud 代码分析 | Settings → Secrets → Actions |
 | `DOCKERHUB_USERNAME` | Docker Hub 描述更新 | Settings → Secrets → Actions |
 | `DOCKERHUB_TOKEN` | Docker Hub 描述更新 | Settings → Secrets → Actions |
-
-### 配置 SonarCloud (可选)
-
-1. 访问 [SonarCloud](https://sonarcloud.io/)
-2. 导入 GitHub 仓库
-3. 获取 `SONAR_TOKEN`
-4. 添加到 GitHub Secrets
-5. 更新 `ci.yml` 中的组织和项目 key
 
 ### 配置 Docker Hub (可选)
 
