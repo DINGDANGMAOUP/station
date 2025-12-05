@@ -19,7 +19,7 @@ caffeine = "3.2.3"
 micrometer = "1.14.2"
 
 # Testing
-testcontainers = "1.20.4"
+testcontainers = "2.0.2"
 wiremock = "3.13.2"
 
 # Utilities
