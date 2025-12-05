@@ -72,7 +72,6 @@ public class StationGrpcService extends ReactorStationServiceGrpc.StationService
 
                         CacheEntry entry = optEntry.get();
 
-                        // For simplicity, assume manifest data is in cache entry
                         if (entry.getData() instanceof String manifestData) {
                             return Flux.just(ManifestData.newBuilder()
                                     .setChunk(ByteString.copyFromUtf8(manifestData))

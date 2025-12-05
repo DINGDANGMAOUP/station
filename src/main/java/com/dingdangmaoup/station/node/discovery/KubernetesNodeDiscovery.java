@@ -16,7 +16,7 @@ import java.time.Instant;
 import java.util.List;
 
 /**
- * Kubernetes-based node discovery implementation
+ * Kubernetes-based node discovery
  */
 @Slf4j
 @Service
@@ -64,21 +64,18 @@ public class KubernetesNodeDiscovery implements NodeDiscoveryService {
 
     @Override
     public Mono<Void> registerSelf() {
-        // In Kubernetes, pods are automatically registered
         log.info("Node registration not needed in Kubernetes mode (pod: {})", nodeId);
         return Mono.empty();
     }
 
     @Override
     public Mono<Void> deregister() {
-        // In Kubernetes, pods are automatically deregistered
         log.info("Node deregistration not needed in Kubernetes mode (pod: {})", nodeId);
         return Mono.empty();
     }
 
     @Override
     public Mono<Void> heartbeat() {
-        // Kubernetes uses liveness/readiness probes instead of manual heartbeat
         log.trace("Heartbeat not needed in Kubernetes mode");
         return Mono.empty();
     }
@@ -97,7 +94,7 @@ public class KubernetesNodeDiscovery implements NodeDiscoveryService {
             return pods.stream()
                     .filter(pod -> pod.getStatus() != null && "Running".equals(pod.getStatus().getPhase()))
                     .filter(pod -> pod.getStatus().getPodIP() != null)
-                    .filter(pod -> !pod.getMetadata().getName().equals(nodeId)) // Exclude self
+                    .filter(pod -> !pod.getMetadata().getName().equals(nodeId))
                     .map(this::podToNodeInfo)
                     .toList();
         })
@@ -132,7 +129,6 @@ public class KubernetesNodeDiscovery implements NodeDiscoveryService {
         String podName = pod.getMetadata().getName();
         String podIp = pod.getStatus().getPodIP();
 
-        // Calculate uptime from pod start time
         String startTime = pod.getStatus().getStartTime();
         long uptimeSeconds = 0;
         if (startTime != null) {
@@ -144,7 +140,6 @@ public class KubernetesNodeDiscovery implements NodeDiscoveryService {
             }
         }
 
-        // Determine node status
         NodeInfo.NodeStatus status = determineNodeStatus(pod);
 
         return NodeInfo.builder()
@@ -164,20 +159,16 @@ public class KubernetesNodeDiscovery implements NodeDiscoveryService {
     private NodeInfo.NodeStatus determineNodeStatus(Pod pod) {
         String podName = pod.getMetadata().getName();
 
-        // If this is the current node, use currentStatus (for draining state)
         if (podName.equals(nodeId)) {
             return currentStatus;
         }
 
-        // For other pods, derive status from Kubernetes pod state
         String phase = pod.getStatus().getPhase();
 
-        // Check if pod has deletion timestamp (being terminated)
         if (pod.getMetadata().getDeletionTimestamp() != null) {
             return NodeInfo.NodeStatus.DRAINING;
         }
 
-        // Check container readiness
         if (pod.getStatus().getConditions() != null) {
             boolean isReady = pod.getStatus().getConditions().stream()
                     .filter(condition -> "Ready".equals(condition.getType()))
@@ -188,7 +179,6 @@ public class KubernetesNodeDiscovery implements NodeDiscoveryService {
             }
         }
 
-        // Default to HEALTHY if pod is Running and Ready
         return "Running".equals(phase)
                 ? NodeInfo.NodeStatus.HEALTHY
                 : NodeInfo.NodeStatus.UNHEALTHY;

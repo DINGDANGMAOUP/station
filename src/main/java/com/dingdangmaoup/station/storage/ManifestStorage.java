@@ -6,9 +6,6 @@ import java.util.Optional;
 
 /**
  * Storage interface for Docker manifest files
- *
- * Note: The reference parameter can be either a tag (e.g., "latest") or a digest (e.g., "sha256:abc123...").
- * Both are stored at the same location: /manifests/{namespace}/{name}/{reference}.json
  */
 public interface ManifestStorage {
 

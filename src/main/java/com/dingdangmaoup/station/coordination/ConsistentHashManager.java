@@ -92,7 +92,6 @@ public class ConsistentHashManager {
      * Update the hash ring with a new set of nodes
      */
     public void updateNodes(List<NodeInfo> nodes) {
-        // Remove nodes that are no longer present
         List<NodeInfo> currentNodes = getAllNodes();
         for (NodeInfo currentNode : currentNodes) {
             if (!nodes.contains(currentNode)) {
@@ -100,7 +99,6 @@ public class ConsistentHashManager {
             }
         }
 
-        // Add new nodes
         for (NodeInfo node : nodes) {
             if (!currentNodes.contains(node)) {
                 addNode(node);

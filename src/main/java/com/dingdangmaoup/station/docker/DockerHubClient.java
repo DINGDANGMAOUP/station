@@ -1,6 +1,8 @@
 package com.dingdangmaoup.station.docker;
 
 import com.dingdangmaoup.station.config.properties.DockerProperties;
+import lombok.Builder;
+import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.buffer.DataBuffer;
@@ -93,14 +95,11 @@ public class DockerHubClient {
                         .exchangeToFlux(response -> {
                             log.debug("Response status for blob {}: {}", digest, response.statusCode());
 
-                            // Check if it's a redirect (307 Temporary Redirect is common for blobs)
                             if (response.statusCode().is3xxRedirection()) {
                                 String location = response.headers().asHttpHeaders().getFirst(HttpHeaders.LOCATION);
                                 log.debug("Blob {} redirected to: {}", digest, location);
 
                                 if (location != null) {
-                                    // Follow the redirect to the CDN
-                                    // Use URI.create to preserve query parameters exactly as-is
                                     try {
                                         URI cdnUri = URI.create(location);
                                         return WebClient.create()
@@ -109,8 +108,6 @@ public class DockerHubClient {
                                                 .retrieve()
                                                 .bodyToFlux(DataBuffer.class)
                                                 .doOnSubscribe(s -> log.debug("Streaming blob {} from CDN: {}", digest, location))
-//                                                .doOnNext(buffer -> log.debug("Received buffer of {} bytes for blob {}",
-//                                                        buffer.readableByteCount(), digest))
                                                 .doOnComplete(() -> log.debug("Completed streaming blob {} from CDN", digest))
                                                 .doOnError(err -> log.error("Error streaming blob {} from CDN", digest, err));
                                     } catch (Exception e) {
@@ -151,8 +148,8 @@ public class DockerHubClient {
                         .onErrorReturn(WebClientResponseException.NotFound.class, false));
     }
 
-    @lombok.Data
-    @lombok.Builder
+    @Data
+    @Builder
     public static class ManifestResponse {
         private String digest;
         private String contentType;

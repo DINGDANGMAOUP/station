@@ -31,7 +31,6 @@ public class RedisConfig {
         LettuceClientConfiguration.builder()
             .commandTimeout(redisProperties.getTimeout());
 
-    // Use cluster-specific options for cluster mode
     if (redisProperties.getMode() == RedisProperties.Mode.CLUSTER) {
       clientConfigBuilder.clientOptions(clusterClientOptions());
     } else {

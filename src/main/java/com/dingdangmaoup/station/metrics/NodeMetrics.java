@@ -21,7 +21,6 @@ public class NodeMetrics {
     private final AtomicLong activeNodeCount = new AtomicLong(0);
 
     public NodeMetrics(MeterRegistry meterRegistry) {
-        // Download counters
         this.blobDownloadCounter = Counter.builder("station.blob.download")
                 .description("Total number of blob downloads")
                 .register(meterRegistry);
@@ -30,7 +29,6 @@ public class NodeMetrics {
                 .description("Total number of manifest downloads")
                 .register(meterRegistry);
 
-        // Gauges
         Gauge.builder("station.blob.total_bytes", totalBlobBytes, AtomicLong::get)
                 .description("Total bytes of cached blobs")
                 .register(meterRegistry);

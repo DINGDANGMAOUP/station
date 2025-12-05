@@ -35,15 +35,12 @@ public class CacheConfig {
 
     @Bean
     public com.github.benmanes.caffeine.cache.Cache<String, Object> localCache() {
-        // Use maximumWeight instead of maximumSize to support both entry count and byte size limits
         long maxWeightBytes = cacheProperties.getLocal().getMaxSize().toBytes();
 
         return Caffeine.newBuilder()
                 .maximumWeight(maxWeightBytes)
                 .weigher((String key, Object value) -> {
-                    // Estimate object size in bytes
-                    // This is a simple estimation; for production use, consider a more accurate sizing strategy
-                    int keySize = key.length() * 2; // Java chars are 2 bytes
+                    int keySize = key.length() * 2;
                     int valueSize = estimateObjectSize(value);
                     return keySize + valueSize;
                 })
@@ -63,7 +60,6 @@ public class CacheConfig {
         if (obj instanceof byte[]) {
             return ((byte[]) obj).length;
         }
-        // Default rough estimate for other objects
-        return 1024; // 1KB default estimate
+        return 1024;
     }
 }

@@ -27,14 +27,12 @@ public class DockerAuthService {
     public Mono<String> getAuthToken(String repository) {
         String cacheKey = "docker.io:" + repository;
 
-        // Check cache first
         DockerAuthToken cachedToken = tokenCache.get(cacheKey);
         if (cachedToken != null) {
             log.debug("Using cached Docker Hub token for: {}", repository);
             return Mono.just(cachedToken.getEffectiveToken());
         }
 
-        // Fetch new token
         return fetchToken(repository)
                 .doOnNext(token -> {
                     tokenCache.put(cacheKey, token);

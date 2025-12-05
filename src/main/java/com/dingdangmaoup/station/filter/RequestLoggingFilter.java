@@ -18,7 +18,7 @@ import java.util.Map;
  */
 @Slf4j
 @Component
-@Order(-1) // Execute before all other filters
+@Order(-1)
 public class RequestLoggingFilter implements WebFilter {
 
     @Override
@@ -32,14 +32,12 @@ public class RequestLoggingFilter implements WebFilter {
         log.info("URI: {}", request.getURI());
         log.info("Query: {}", request.getURI().getQuery());
 
-        // Log headers
         HttpHeaders headers = request.getHeaders();
         log.info("Headers:");
         headers.forEach((name, values) -> {
             log.info("  {}: {}", name, String.join(", ", values));
         });
 
-        // Log Docker-specific headers
         String userAgent = headers.getFirst("User-Agent");
         String dockerClient = headers.getFirst("Docker-Client");
         if (userAgent != null) {

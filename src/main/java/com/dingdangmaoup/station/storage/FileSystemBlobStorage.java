@@ -42,7 +42,6 @@ public class FileSystemBlobStorage implements BlobStorage {
                 Path tempFile = getTempPath(UUID.randomUUID().toString());
                 Path finalPath = getBlobPath(digest);
 
-                // Ensure parent directory exists
                 Files.createDirectories(finalPath.getParent());
 
                 log.debug("Saving blob {} to temporary file: {}", digest, tempFile);
@@ -50,7 +49,6 @@ public class FileSystemBlobStorage implements BlobStorage {
                 return DataBufferUtils.write(data, tempFile, StandardOpenOption.CREATE_NEW)
                         .then(Mono.defer(() -> {
                             try {
-                                // Atomic move to final location
                                 Files.move(tempFile, finalPath, StandardCopyOption.ATOMIC_MOVE,
                                         StandardCopyOption.REPLACE_EXISTING);
 
@@ -210,10 +208,8 @@ public class FileSystemBlobStorage implements BlobStorage {
             throw new IllegalArgumentException("Invalid digest format (hash too short): " + digest);
         }
 
-        // Use first 2 chars of hash for sharding: "ab"
         String prefix = hash.substring(0, 2);
 
-        // Format: /basePath/blobs/sha256/ab/abc123def456...
         return Paths.get(basePath, "blobs", algorithm, prefix, hash);
     }
 

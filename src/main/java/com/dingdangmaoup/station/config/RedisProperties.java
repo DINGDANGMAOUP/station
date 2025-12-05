@@ -21,10 +21,8 @@ public class RedisProperties {
     private int database = 0;
     private Duration timeout = Duration.ofSeconds(5);
 
-    // Cluster configuration
     private ClusterConfig cluster = new ClusterConfig();
 
-    // Sentinel configuration
     private SentinelConfig sentinel = new SentinelConfig();
 
     public enum Mode {
@@ -35,10 +33,9 @@ public class RedisProperties {
 
     @Data
     public static class ClusterConfig {
-        private String nodes;  // Support comma-separated string
+        private String nodes;
         private int maxRedirects = 3;
 
-        // Get nodes as list, supporting both comma-separated string and list
         public List<String> getNodesList() {
             if (nodes == null || nodes.isBlank()) {
                 return List.of();
@@ -53,9 +50,8 @@ public class RedisProperties {
     @Data
     public static class SentinelConfig {
         private String master = "mymaster";
-        private String nodes;  // Support comma-separated string
+        private String nodes;
 
-        // Get nodes as list, supporting both comma-separated string and list
         public List<String> getNodesList() {
             if (nodes == null || nodes.isBlank()) {
                 return List.of();

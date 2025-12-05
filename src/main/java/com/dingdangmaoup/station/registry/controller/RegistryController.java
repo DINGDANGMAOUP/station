@@ -24,7 +24,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 /**
- * Docker Registry API v2 Implementation
+ * Docker Registry API v2
  */
 @Slf4j
 @RestController
@@ -66,7 +66,6 @@ public class RegistryController {
             @PathVariable String name,
             @PathVariable String reference) {
 
-        // Combine namespace and name if namespace is present
         String fullName = (namespace != null) ? namespace + "/" + name : name;
         log.info("GET manifest: {}:{}", fullName, reference);
 
@@ -75,7 +74,6 @@ public class RegistryController {
         return cacheManager.get(key)
                 .flatMap(optEntry -> {
                     if (optEntry.isPresent()) {
-                        // Cache hit at L1 or L2
                         CacheEntry entry = optEntry.get();
                         log.info("Cache HIT for manifest: {}:{}", fullName, reference);
 
@@ -115,14 +113,11 @@ public class RegistryController {
                     return peerCacheService.queryPeersForManifest(fullName, reference)
                             .flatMap(peerResult -> {
                                 if (peerResult.isPresent()) {
-                                    // Found in peer cache
                                     var manifestData = peerResult.get();
                                     log.info("Found manifest {}:{} in peer cache", fullName, reference);
 
-                                    // Convert ByteString to String
                                     String content = manifestData.getChunk().toStringUtf8();
 
-                                    // Store in local caches and file system
                                     CacheEntry newEntry = CacheEntry.builder()
                                             .digest(manifestData.getDigest())
                                             .size((long) content.length())
@@ -149,10 +144,8 @@ public class RegistryController {
                                 return distributedLock.withLock(lockKey,
                                         dockerHubClient.getManifest(fullName, reference)
                                                 .flatMap(manifestResponse -> {
-                                                    // Record manifest download metrics
                                                     nodeMetrics.recordManifestDownload();
 
-                                                    // Store in cache and file system
                                                     CacheEntry newEntry = CacheEntry.builder()
                                                             .digest(manifestResponse.getDigest())
                                                             .size(manifestResponse.getSize())
@@ -248,14 +241,11 @@ public class RegistryController {
                     return peerCacheService.queryPeersForBlob(digest)
                             .flatMap(peerResult -> {
                                 if (peerResult.isPresent()) {
-                                    // Found in peer cache - save to storage then read back
                                     log.info("Found blob {} in peer cache", digest);
                                     Flux<DataBuffer> peerDataFlux = peerResult.get();
 
-                                    // Save to storage
                                     return blobStorage.saveBlob(digest, peerDataFlux)
                                             .flatMap(metadata -> {
-                                                // Store in cache index
                                                 CacheKey key = CacheKey.forBlob(digest);
                                                 CacheEntry entry = CacheEntry.forBlob(digest, metadata.getSize(), nodeId);
 
@@ -276,13 +266,10 @@ public class RegistryController {
 
                                 String lockKey = "blob:" + digest;
                                 return distributedLock.withLock(lockKey,
-                                        // Stream blob directly from Docker Hub and save to storage
                                         blobStorage.saveBlob(digest, dockerHubClient.streamBlob(fullName, digest))
                                                 .flatMap(metadata -> {
-                                                    // Record blob download metrics
                                                     nodeMetrics.recordBlobDownload(metadata.getSize());
 
-                                                    // Store in cache index
                                                     CacheKey key = CacheKey.forBlob(digest);
                                                     CacheEntry entry = CacheEntry.forBlob(digest, metadata.getSize(), nodeId);
 

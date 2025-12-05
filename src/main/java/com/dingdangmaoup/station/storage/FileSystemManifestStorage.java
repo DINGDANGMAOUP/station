@@ -16,12 +16,9 @@ import java.util.HexFormat;
 import java.util.Optional;
 
 /**
- * File system based implementation of ManifestStorage
+ * File-system-based implementation of ManifestStorage
  * Stores manifests in the directory structure:
- * /basePath/manifests/{namespace}/{name}/{reference}.json
  *
- * Note: reference can be either a tag (e.g., "latest") or a digest (e.g., "sha256:abc123...")
- * Both are stored in the same location. When reference is a digest, the colon is sanitized to underscore.
  */
 @Slf4j
 @Component
@@ -52,10 +49,8 @@ public class FileSystemManifestStorage implements ManifestStorage {
         return Mono.fromCallable(() -> {
             Path manifestPath = getManifestPath(fullName, reference);
 
-            // Ensure parent directories exist
             Files.createDirectories(manifestPath.getParent());
 
-            // Write manifest content to storage location
             byte[] contentBytes = content.getBytes(StandardCharsets.UTF_8);
             Files.write(manifestPath, contentBytes,
                     StandardOpenOption.CREATE,
@@ -87,11 +82,9 @@ public class FileSystemManifestStorage implements ManifestStorage {
                 return Optional.<ManifestData>empty();
             }
 
-            // Read manifest content
             byte[] contentBytes = Files.readAllBytes(manifestPath);
             String content = new String(contentBytes, StandardCharsets.UTF_8);
 
-            // Calculate digest
             String digest = calculateDigest(contentBytes);
 
             log.debug("Read manifest {}:{} from {} ({} bytes)",
@@ -199,7 +192,6 @@ public class FileSystemManifestStorage implements ManifestStorage {
      * Example: /data/station/manifests/library/nginx/sha256_abc123.json (when reference is a digest)
      */
     private Path getManifestPath(String fullName, String reference) {
-        // Sanitize reference to be filesystem safe (colons become underscores)
         String safeReference = sanitizeFilename(reference);
         return Paths.get(basePath, "manifests", fullName, safeReference + ".json");
     }
@@ -208,7 +200,6 @@ public class FileSystemManifestStorage implements ManifestStorage {
      * Sanitize filename to remove potentially dangerous characters
      */
     private String sanitizeFilename(String filename) {
-        // Replace characters that are problematic in filenames
         return filename.replaceAll("[^a-zA-Z0-9._-]", "_");
     }
 

@@ -27,7 +27,6 @@ public class CacheMetrics {
     private final Timer dockerHubLatency;
 
     public CacheMetrics(MeterRegistry meterRegistry) {
-        // Hit/Miss counters
         this.localCacheHits = Counter.builder("station.cache.hit")
                 .tag("level", "local")
                 .description("Number of local cache hits")
@@ -63,7 +62,6 @@ public class CacheMetrics {
                 .description("Number of Docker Hub fetches")
                 .register(meterRegistry);
 
-        // Latency timers
         this.localCacheLatency = Timer.builder("station.cache.latency")
                 .tag("level", "local")
                 .description("Local cache operation latency")
@@ -85,7 +83,6 @@ public class CacheMetrics {
                 .register(meterRegistry);
     }
 
-    // Hit/Miss recording methods
     public void recordLocalCacheHit() {
         localCacheHits.increment();
     }
@@ -114,7 +111,6 @@ public class CacheMetrics {
         dockerHubHits.increment();
     }
 
-    // Timer methods
     public Timer.Sample startLocalCacheTimer() {
         return Timer.start();
     }

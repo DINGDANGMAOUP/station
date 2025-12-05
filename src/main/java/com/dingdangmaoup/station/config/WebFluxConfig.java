@@ -47,7 +47,6 @@ public class WebFluxConfig {
 
     @Bean
     public WebClient dockerHubWebClient() {
-        // Configure connection pool
         ConnectionProvider provider = ConnectionProvider.builder("docker-hub")
                 .maxConnections(100)
                 .maxIdleTime(Duration.ofSeconds(20))
@@ -56,7 +55,6 @@ public class WebFluxConfig {
                 .evictInBackground(Duration.ofSeconds(120))
                 .build();
 
-        // Configure HTTP client
         HttpClient httpClient = HttpClient.create(provider)
                 .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, (int) timeout.toMillis())
                 .responseTimeout(timeout)
@@ -64,7 +62,6 @@ public class WebFluxConfig {
                         conn.addHandlerLast(new ReadTimeoutHandler(timeout.toSeconds(), TimeUnit.SECONDS))
                                 .addHandlerLast(new WriteTimeoutHandler(timeout.toSeconds(), TimeUnit.SECONDS)));
 
-        // Configure exchange strategies for large responses
         ExchangeStrategies strategies = ExchangeStrategies.builder()
                 .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(100 * 1024 * 1024)) // 100MB
                 .build();

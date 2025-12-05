@@ -81,7 +81,6 @@ public class DistributedLock {
                         return Mono.just(true);
                     }
 
-                    // Retry with exponential backoff
                     return Mono.delay(Duration.ofMillis(100))
                             .flatMap(tick -> tryAcquireLock(lockKey, timeout.minus(Duration.ofMillis(100))))
                             .timeout(timeout)

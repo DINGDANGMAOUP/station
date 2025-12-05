@@ -23,7 +23,6 @@ public class StorageConfig {
     @PostConstruct
     public void initializeStorage() {
         try {
-            // Create base directories
             Path base = Paths.get(basePath);
             Path blobs = base.resolve("blobs/sha256");
             Path manifests = base.resolve("manifests");
@@ -40,7 +39,6 @@ public class StorageConfig {
             log.info("  Manifests: {}", manifests.toAbsolutePath());
             log.info("  Temp: {}", temp.toAbsolutePath());
 
-            // Verify write permissions
             if (!Files.isWritable(base)) {
                 throw new IllegalStateException("Base storage path is not writable: " + base);
             }

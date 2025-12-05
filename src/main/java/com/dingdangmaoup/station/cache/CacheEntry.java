@@ -18,7 +18,7 @@ public class CacheEntry implements Serializable {
     private String nodeId;
     private String contentType;
     private Instant timestamp;
-    private Object data;  // Flexible data field
+    private Object data;
 
     public static CacheEntry forManifest(String digest, long size, String nodeId, String contentType) {
         return CacheEntry.builder()

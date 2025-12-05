@@ -87,7 +87,6 @@ public class ConsistentHash<T> {
             selectedNodes.add(iterator.next().getValue());
         }
 
-        // Wrap around if needed
         if (selectedNodes.size() < count) {
             iterator = ring.headMap(hash).entrySet().iterator();
             while (selectedNodes.size() < count && iterator.hasNext()) {
@@ -120,7 +119,6 @@ public class ConsistentHash<T> {
             MessageDigest md = MessageDigest.getInstance("MD5");
             byte[] digest = md.digest(key.getBytes(StandardCharsets.UTF_8));
 
-            // Use first 8 bytes as long
             long hash = 0;
             for (int i = 0; i < 8; i++) {
                 hash = (hash << 8) | (digest[i] & 0xFF);
