@@ -1,0 +1,42 @@
+---
+# Headless Service for Station StatefulSet
+apiVersion: v1
+kind: Service
+metadata:
+  name: station
+  namespace: station
+  labels:
+    app: station
+spec:
+  clusterIP: None
+  ports:
+  - port: 5000
+    targetPort: 5000
+    protocol: TCP
+    name: http
+  - port: 50051
+    targetPort: 50051
+    protocol: TCP
+    name: grpc
+  selector:
+    app: station
+
+---
+# External Service for HTTP Registry
+apiVersion: v1
+kind: Service
+metadata:
+  name: station-registry
+  namespace: station
+  labels:
+    app: station
+    service: registry
+spec:
+  type: ClusterIP
+  ports:
+  - port: 5000
+    targetPort: 5000
+    protocol: TCP
+    name: http
+  selector:
+    app: station

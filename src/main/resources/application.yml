@@ -1,0 +1,177 @@
+spring:
+  application:
+    name: station
+
+  # WebFlux Configuration
+#  webflux:
+#    base-path: /
+#    static-path-pattern: ""  # Disable static resource pattern matching
+
+  # Disable static resources completely
+#  web:
+#    resources:
+#      add-mappings: false
+
+  # Redis Configuration
+  data:
+    redis:
+      repositories:
+        enabled: false
+
+  # Lifecycle Management
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
+
+  # Cloud Kubernetes (enabled only when in K8s)
+  cloud:
+    kubernetes:
+      discovery:
+        enabled: false
+
+# Server Configuration
+server:
+  port: ${STATION_HTTP_PORT:5000}
+  shutdown: graceful
+  netty:
+    connection-timeout: 30s
+
+# Station Configuration
+station:
+  # Node Configuration
+  node:
+    id: ${HOSTNAME:node-1}-${random.uuid}
+    grpc-port: 50051
+    http-port: 5000
+
+  # Redis Configuration
+  redis:
+    mode: ${STATION_REDIS_MODE:standalone}  # standalone, cluster, sentinel
+    host: ${STATION_REDIS_HOST:10.10.202.160}
+    port: ${STATION_REDIS_PORT:6379}
+    password: ${STATION_REDIS_PASSWORD:redis_FrCBmf}
+    database: 0
+    timeout: 5s
+
+    # Cluster Mode Configuration
+    cluster:
+      nodes: ${STATION_REDIS_CLUSTER_NODES:redis-0.redis.default.svc.cluster.local:6379,redis-1.redis.default.svc.cluster.local:6379,redis-2.redis.default.svc.cluster.local:6379}
+      max-redirects: 3
+
+    # Sentinel Mode Configuration
+    sentinel:
+      master: ${STATION_REDIS_SENTINEL_MASTER:mymaster}
+      nodes: ${STATION_REDIS_SENTINEL_NODES:sentinel-0:26379,sentinel-1:26379,sentinel-2:26379}
+
+  # Storage Configuration
+  storage:
+    base-path: ${STATION_STORAGE_PATH:./data/station}
+    blob-chunk-size: 65536  # 64KB in bytes
+    temp-dir: ${STATION_STORAGE_PATH:./data/station}/temp
+
+  # Cache Configuration
+  cache:
+    local:
+      max-size: 1GB
+      max-entries: 10000
+      ttl: 1h
+    redis:
+      manifest-ttl: 24h
+      blob-ttl: 168h  # 7 days
+
+  # Docker Hub Configuration
+  docker:
+    hub-url: https://registry-1.docker.io
+    auth-url: https://auth.docker.io
+    timeout: 30s
+    retry:
+      max-attempts: 3
+      backoff-delay: 1s
+
+  # Node Discovery Configuration
+  discovery:
+    type: ${STATION_DISCOVERY_TYPE:redis}  # kubernetes, redis
+    kubernetes:
+      namespace: ${KUBERNETES_NAMESPACE:default}
+      label-selector: ${STATION_K8S_LABEL_SELECTOR:app=station}
+    heartbeat-interval: 10s
+    node-timeout: 30s
+    refresh-interval: 5s  # Interval to refresh peer nodes list
+
+  # Coordination Configuration
+  coordination:
+    consistent-hash:
+      virtual-nodes: 150
+    # Note: Replication feature not yet implemented
+    # replication:
+    #   enabled: false
+    #   factor: 2
+    lock:
+      ttl: 30s
+      wait-timeout: 10s
+
+  # Eviction Configuration
+  eviction:
+    enabled: true
+    check-interval: 1h
+    threshold: 90  # percentage
+
+# gRPC Configuration
+grpc:
+  server:
+    port: 50051
+    max-inbound-message-size: 104857600  # 100MB
+    keepalive-time: 30s
+    keepalive-timeout: 10s
+    permit-keepalive-without-calls: true
+  client:
+    GLOBAL:
+      negotiation-type: plaintext
+      max-inbound-message-size: 104857600  # 100MB
+      keep-alive-time: 30s
+      keep-alive-timeout: 10s
+
+# Management & Actuator
+management:
+  endpoints:
+    web:
+      base-path: /actuator
+      exposure:
+        include: health,metrics,prometheus,info,startup
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: when-authorized
+
+
+  metrics:
+    tags:
+      application: ${spring.application.name}
+      node: ${station.node.id}
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+        grpc.server.requests: true
+
+  health:
+    diskspace:
+      enabled: true
+      path: ${station.storage.base-path:./data/station}
+      threshold: 10GB
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+
+# Logging Configuration
+logging:
+  level:
+    root: INFO
+    com.dingdangmaoup.station: DEBUG
+    io.grpc: INFO
+    io.lettuce.core: INFO
+    org.springframework.web: INFO
+    org.springframework.data.redis: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"

@@ -1,0 +1,45 @@
+---
+# Headless Service for Redis Cluster StatefulSet
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-cluster
+  namespace: station
+  labels:
+    app: redis
+    mode: cluster
+spec:
+  clusterIP: None
+  ports:
+  - port: 6379
+    targetPort: 6379
+    protocol: TCP
+    name: client
+  - port: 16379
+    targetPort: 16379
+    protocol: TCP
+    name: gossip
+  selector:
+    app: redis
+    mode: cluster
+
+---
+# ClusterIP Service for Redis Cluster
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-cluster-service
+  namespace: station
+  labels:
+    app: redis
+    mode: cluster
+spec:
+  type: ClusterIP
+  ports:
+  - port: 6379
+    targetPort: 6379
+    protocol: TCP
+    name: client
+  selector:
+    app: redis
+    mode: cluster

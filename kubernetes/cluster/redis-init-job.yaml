@@ -1,0 +1,50 @@
+---
+# Redis Cluster Initialization Job
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: redis-cluster-init
+  namespace: station
+  labels:
+    app: redis
+    mode: cluster
+    job: init
+spec:
+  template:
+    metadata:
+      labels:
+        app: redis-cluster-init
+    spec:
+      restartPolicy: OnFailure
+      containers:
+      - name: redis-cluster-init
+        image: redis:7.4-alpine
+        command:
+        - sh
+        - -c
+        - |
+          set -e
+          echo "Waiting for Redis nodes to be ready..."
+          sleep 30
+
+          NODES=""
+          for i in 0 1 2 3 4 5; do
+            NODES="$NODES redis-cluster-$i.redis-cluster.station.svc.cluster.local:6379"
+          done
+
+          echo "Creating Redis cluster with nodes: $NODES"
+
+          redis-cli --cluster create $NODES \
+            --cluster-replicas 1 \
+            --cluster-yes
+
+          echo "Redis cluster created successfully!"
+
+          redis-cli -h redis-cluster-0.redis-cluster.station.svc.cluster.local cluster info
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "200m"
