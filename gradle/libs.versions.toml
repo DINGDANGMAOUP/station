@@ -28,7 +28,7 @@ commons-io = "2.18.0"
 jackson-datatype-jsr310 = "2.18.2"
 
 # Lombok
-lombok = "1.18.36"
+lombok = "1.18.42"
 
 [libraries]
 # Spring Boot Starters
