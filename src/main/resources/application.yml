@@ -1,17 +1,6 @@
 spring:
   application:
     name: station
-
-  # WebFlux Configuration
-#  webflux:
-#    base-path: /
-#    static-path-pattern: ""  # Disable static resource pattern matching
-
-  # Disable static resources completely
-#  web:
-#    resources:
-#      add-mappings: false
-
   # Redis Configuration
   data:
     redis:
@@ -40,22 +29,27 @@ station:
   # Node Configuration
   node:
     id: ${HOSTNAME:node-1}-${random.uuid}
-    grpc-port: 50051
-    http-port: 5000
+    grpc-port: ${STATION_GRPC_PORT:50051}
+    http-port: ${STATION_HTTP_PORT:5000}
+
+  # Logging Configuration
+  logging:
+    request-logging: ${STATION_REQUEST_LOGGING:false}  # Enable request logging filter
+    include-headers: ${STATION_INCLUDE_HEADERS:false}  # Include HTTP headers in request logs
 
   # Redis Configuration
   redis:
     mode: ${STATION_REDIS_MODE:standalone}  # standalone, cluster, sentinel
-    host: ${STATION_REDIS_HOST:10.10.202.160}
+    host: ${STATION_REDIS_HOST:localhost}
     port: ${STATION_REDIS_PORT:6379}
-    password: ${STATION_REDIS_PASSWORD:redis_FrCBmf}
-    database: 0
-    timeout: 5s
+    password: ${STATION_REDIS_PASSWORD:}
+    database: ${STATION_REDIS_DATABASE:0}
+    timeout: ${STATION_REDIS_TIMEOUT:5s}
 
     # Cluster Mode Configuration
     cluster:
       nodes: ${STATION_REDIS_CLUSTER_NODES:redis-0.redis.default.svc.cluster.local:6379,redis-1.redis.default.svc.cluster.local:6379,redis-2.redis.default.svc.cluster.local:6379}
-      max-redirects: 3
+      max-redirects: ${STATION_REDIS_CLUSTER_MAX_REDIRECTS:3}
 
     # Sentinel Mode Configuration
     sentinel:
@@ -65,27 +59,27 @@ station:
   # Storage Configuration
   storage:
     base-path: ${STATION_STORAGE_PATH:./data/station}
-    blob-chunk-size: 65536  # 64KB in bytes
-    temp-dir: ${STATION_STORAGE_PATH:./data/station}/temp
+    blob-chunk-size: ${STATION_STORAGE_BLOB_CHUNK_SIZE:65536}  # 64KB in bytes
+    temp-dir: ${STATION_STORAGE_TEMP_DIR:${STATION_STORAGE_PATH:./data/station}/temp}
 
   # Cache Configuration
   cache:
     local:
-      max-size: 1GB
-      max-entries: 10000
-      ttl: 1h
+      max-size: ${STATION_CACHE_LOCAL_MAX_SIZE:1GB}
+      max-entries: ${STATION_CACHE_LOCAL_MAX_ENTRIES:10000}
+      ttl: ${STATION_CACHE_LOCAL_TTL:1h}
     redis:
-      manifest-ttl: 24h
-      blob-ttl: 168h  # 7 days
+      manifest-ttl: ${STATION_CACHE_REDIS_MANIFEST_TTL:24h}
+      blob-ttl: ${STATION_CACHE_REDIS_BLOB_TTL:168h}  # 7 days
 
   # Docker Hub Configuration
   docker:
-    hub-url: https://registry-1.docker.io
-    auth-url: https://auth.docker.io
-    timeout: 30s
+    hub-url: ${STATION_DOCKER_HUB_URL:https://registry-1.docker.io}
+    auth-url: ${STATION_DOCKER_AUTH_URL:https://auth.docker.io}
+    timeout: ${STATION_DOCKER_TIMEOUT:30s}
     retry:
-      max-attempts: 3
-      backoff-delay: 1s
+      max-attempts: ${STATION_DOCKER_RETRY_MAX_ATTEMPTS:3}
+      backoff-delay: ${STATION_DOCKER_RETRY_BACKOFF_DELAY:1s}
 
   # Node Discovery Configuration
   discovery:
@@ -93,55 +87,59 @@ station:
     kubernetes:
       namespace: ${KUBERNETES_NAMESPACE:default}
       label-selector: ${STATION_K8S_LABEL_SELECTOR:app=station}
-    heartbeat-interval: 10s
-    node-timeout: 30s
-    refresh-interval: 5s  # Interval to refresh peer nodes list
+    redis:
+      max-attempts: ${STATION_DISCOVERY_REDIS_MAX_ATTEMPTS:6}  # Maximum retry attempts for node registration
+      initial-backoff: ${STATION_DISCOVERY_REDIS_INITIAL_BACKOFF:5s}  # Initial backoff duration between retries
+      max-backoff: ${STATION_DISCOVERY_REDIS_MAX_BACKOFF:10s}  # Maximum backoff duration between retries
+      node-timeout: ${STATION_DISCOVERY_REDIS_NODE_TIMEOUT:30s}
+    heartbeat-interval: ${STATION_DISCOVERY_HEARTBEAT_INTERVAL:10s}
+    refresh-interval: ${STATION_DISCOVERY_REFRESH_INTERVAL:5s}  # Interval to refresh peer nodes list
 
   # Coordination Configuration
   coordination:
     consistent-hash:
-      virtual-nodes: 150
+      virtual-nodes: ${STATION_COORDINATION_VIRTUAL_NODES:150}
     # Note: Replication feature not yet implemented
     # replication:
     #   enabled: false
     #   factor: 2
     lock:
-      ttl: 30s
-      wait-timeout: 10s
+      ttl: ${STATION_COORDINATION_LOCK_TTL:30s}
+      wait-timeout: ${STATION_COORDINATION_LOCK_WAIT_TIMEOUT:10s}
 
   # Eviction Configuration
   eviction:
-    enabled: true
-    check-interval: 1h
-    threshold: 90  # percentage
+    enabled: ${STATION_EVICTION_ENABLED:true}
+    check-interval: ${STATION_EVICTION_CHECK_INTERVAL:1h}
+    threshold: ${STATION_EVICTION_THRESHOLD:90}  # percentage
 
 # gRPC Configuration
 grpc:
   server:
-    port: 50051
-    max-inbound-message-size: 104857600  # 100MB
-    keepalive-time: 30s
-    keepalive-timeout: 10s
-    permit-keepalive-without-calls: true
+    port: ${STATION_GRPC_PORT:50051}
+    max-inbound-message-size: ${GRPC_SERVER_MAX_INBOUND_MESSAGE_SIZE:104857600}  # 100MB
+    keepalive-time: ${GRPC_SERVER_KEEPALIVE_TIME:30s}
+    keepalive-timeout: ${GRPC_SERVER_KEEPALIVE_TIMEOUT:10s}
+    permit-keepalive-without-calls: ${GRPC_SERVER_PERMIT_KEEPALIVE:true}
   client:
     GLOBAL:
-      negotiation-type: plaintext
-      max-inbound-message-size: 104857600  # 100MB
-      keep-alive-time: 30s
-      keep-alive-timeout: 10s
+      negotiation-type: ${GRPC_CLIENT_NEGOTIATION_TYPE:plaintext}
+      max-inbound-message-size: ${GRPC_CLIENT_MAX_INBOUND_MESSAGE_SIZE:104857600}  # 100MB
+      keep-alive-time: ${GRPC_CLIENT_KEEPALIVE_TIME:30s}
+      keep-alive-timeout: ${GRPC_CLIENT_KEEPALIVE_TIMEOUT:10s}
 
 # Management & Actuator
 management:
   endpoints:
     web:
-      base-path: /actuator
+      base-path: ${MANAGEMENT_ENDPOINTS_BASE_PATH:/actuator}
       exposure:
-        include: health,metrics,prometheus,info,startup
+        include: ${MANAGEMENT_ENDPOINTS_EXPOSURE:health,metrics,prometheus,info,startup}
   endpoint:
     health:
       probes:
-        enabled: true
-      show-details: when-authorized
+        enabled: ${MANAGEMENT_HEALTH_PROBES_ENABLED:true}
+      show-details: ${MANAGEMENT_HEALTH_SHOW_DETAILS:when-authorized}
 
 
   metrics:
@@ -150,18 +148,18 @@ management:
       node: ${station.node.id}
     distribution:
       percentiles-histogram:
-        http.server.requests: true
-        grpc.server.requests: true
+        http.server.requests: ${MANAGEMENT_METRICS_HTTP_HISTOGRAM:true}
+        grpc.server.requests: ${MANAGEMENT_METRICS_GRPC_HISTOGRAM:true}
 
   health:
     diskspace:
-      enabled: true
+      enabled: ${MANAGEMENT_HEALTH_DISKSPACE_ENABLED:true}
       path: ${station.storage.base-path:./data/station}
-      threshold: 10GB
+      threshold: ${MANAGEMENT_HEALTH_DISKSPACE_THRESHOLD:10GB}
   prometheus:
     metrics:
       export:
-        enabled: true
+        enabled: ${MANAGEMENT_PROMETHEUS_ENABLED:true}
 
 # Logging Configuration
 logging:

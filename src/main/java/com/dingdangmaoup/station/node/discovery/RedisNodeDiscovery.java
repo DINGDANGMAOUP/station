@@ -39,18 +39,26 @@ public class RedisNodeDiscovery implements NodeDiscoveryService {
     @Value("${station.node.http-port:5000}")
     private int httpPort;
 
-    @Value("${station.discovery.node-timeout:30s}")
+    @Value("${station.discovery.redis.node-timeout:30s}")
     private Duration nodeTimeout;
+
+    @Value("${station.discovery.redis.max-attempts:6}")
+    private long maxRetryAttempts;
+
+    @Value("${station.discovery.redis.initial-backoff:5s}")
+    private Duration initialBackoff;
+
+    @Value("${station.discovery.redis.max-backoff:10s}")
+    private Duration maxBackoff;
 
     private volatile NodeInfo.NodeStatus currentStatus = NodeInfo.NodeStatus.HEALTHY;
     private final Instant startTime = Instant.now();
 
     @EventListener(ApplicationReadyEvent.class)
     public void onApplicationReady() {
-        // Retry registration with exponential backoff
         registerSelf()
-                .retryWhen(Retry.backoff(6, Duration.ofSeconds(5))
-                        .maxBackoff(Duration.ofSeconds(10))
+                .retryWhen(Retry.backoff(maxRetryAttempts, initialBackoff)
+                        .maxBackoff(maxBackoff)
                         .doBeforeRetry(signal ->
                             log.warn("Retrying node registration, attempt: {}", signal.totalRetries() + 1)))
                 .doOnSuccess(v -> log.info("Node registration successful"))
