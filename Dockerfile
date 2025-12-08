@@ -16,7 +16,7 @@ COPY src ./src
 RUN gradle clean build -x test --no-daemon
 
 # Stage 2: Runtime
-FROM openjdk:21-ea-slim
+FROM openjdk:27-ea-slim
 
 LABEL maintainer="Station Team"
 LABEL description="Distributed Docker Hub Cache Mirror"
