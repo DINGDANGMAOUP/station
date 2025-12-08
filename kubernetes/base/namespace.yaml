@@ -1,0 +1,9 @@
+---
+# Namespace for Station
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: station
+  labels:
+    name: station
+    app: station

@@ -1,0 +1,42 @@
+---
+# ServiceAccount for Station
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: station
+  namespace: station
+  labels:
+    app: station
+
+---
+# ClusterRole for Kubernetes discovery
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: station-discovery
+  labels:
+    app: station
+rules:
+- apiGroups: [""]
+  resources: ["pods", "endpoints"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: [""]
+  resources: ["services"]
+  verbs: ["get", "list"]
+
+---
+# ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: station-discovery
+  labels:
+    app: station
+subjects:
+- kind: ServiceAccount
+  name: station
+  namespace: station
+roleRef:
+  kind: ClusterRole
+  name: station-discovery
+  apiGroup: rbac.authorization.k8s.io

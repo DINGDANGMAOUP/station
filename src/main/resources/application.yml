@@ -1,0 +1,175 @@
+spring:
+  application:
+    name: station
+  # Redis Configuration
+  data:
+    redis:
+      repositories:
+        enabled: false
+
+  # Lifecycle Management
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
+
+  # Cloud Kubernetes (enabled only when in K8s)
+  cloud:
+    kubernetes:
+      discovery:
+        enabled: false
+
+# Server Configuration
+server:
+  port: ${STATION_HTTP_PORT:5000}
+  shutdown: graceful
+  netty:
+    connection-timeout: 30s
+
+# Station Configuration
+station:
+  # Node Configuration
+  node:
+    id: ${HOSTNAME:node-1}-${random.uuid}
+    grpc-port: ${STATION_GRPC_PORT:50051}
+    http-port: ${STATION_HTTP_PORT:5000}
+
+  # Logging Configuration
+  logging:
+    request-logging: ${STATION_REQUEST_LOGGING:false}  # Enable request logging filter
+    include-headers: ${STATION_INCLUDE_HEADERS:false}  # Include HTTP headers in request logs
+
+  # Redis Configuration
+  redis:
+    mode: ${STATION_REDIS_MODE:standalone}  # standalone, cluster, sentinel
+    host: ${STATION_REDIS_HOST:localhost}
+    port: ${STATION_REDIS_PORT:6379}
+    password: ${STATION_REDIS_PASSWORD:}
+    database: ${STATION_REDIS_DATABASE:0}
+    timeout: ${STATION_REDIS_TIMEOUT:5s}
+
+    # Cluster Mode Configuration
+    cluster:
+      nodes: ${STATION_REDIS_CLUSTER_NODES:redis-0.redis.default.svc.cluster.local:6379,redis-1.redis.default.svc.cluster.local:6379,redis-2.redis.default.svc.cluster.local:6379}
+      max-redirects: ${STATION_REDIS_CLUSTER_MAX_REDIRECTS:3}
+
+    # Sentinel Mode Configuration
+    sentinel:
+      master: ${STATION_REDIS_SENTINEL_MASTER:mymaster}
+      nodes: ${STATION_REDIS_SENTINEL_NODES:sentinel-0:26379,sentinel-1:26379,sentinel-2:26379}
+
+  # Storage Configuration
+  storage:
+    base-path: ${STATION_STORAGE_PATH:./data/station}
+    blob-chunk-size: ${STATION_STORAGE_BLOB_CHUNK_SIZE:65536}  # 64KB in bytes
+    temp-dir: ${STATION_STORAGE_TEMP_DIR:${STATION_STORAGE_PATH:./data/station}/temp}
+
+  # Cache Configuration
+  cache:
+    local:
+      max-size: ${STATION_CACHE_LOCAL_MAX_SIZE:1GB}
+      max-entries: ${STATION_CACHE_LOCAL_MAX_ENTRIES:10000}
+      ttl: ${STATION_CACHE_LOCAL_TTL:1h}
+    redis:
+      manifest-ttl: ${STATION_CACHE_REDIS_MANIFEST_TTL:24h}
+      blob-ttl: ${STATION_CACHE_REDIS_BLOB_TTL:168h}  # 7 days
+
+  # Docker Hub Configuration
+  docker:
+    hub-url: ${STATION_DOCKER_HUB_URL:https://registry-1.docker.io}
+    auth-url: ${STATION_DOCKER_AUTH_URL:https://auth.docker.io}
+    timeout: ${STATION_DOCKER_TIMEOUT:30s}
+    retry:
+      max-attempts: ${STATION_DOCKER_RETRY_MAX_ATTEMPTS:3}
+      backoff-delay: ${STATION_DOCKER_RETRY_BACKOFF_DELAY:1s}
+
+  # Node Discovery Configuration
+  discovery:
+    type: ${STATION_DISCOVERY_TYPE:redis}  # kubernetes, redis
+    kubernetes:
+      namespace: ${KUBERNETES_NAMESPACE:default}
+      label-selector: ${STATION_K8S_LABEL_SELECTOR:app=station}
+    redis:
+      max-attempts: ${STATION_DISCOVERY_REDIS_MAX_ATTEMPTS:6}  # Maximum retry attempts for node registration
+      initial-backoff: ${STATION_DISCOVERY_REDIS_INITIAL_BACKOFF:5s}  # Initial backoff duration between retries
+      max-backoff: ${STATION_DISCOVERY_REDIS_MAX_BACKOFF:10s}  # Maximum backoff duration between retries
+      node-timeout: ${STATION_DISCOVERY_REDIS_NODE_TIMEOUT:30s}
+    heartbeat-interval: ${STATION_DISCOVERY_HEARTBEAT_INTERVAL:10s}
+    refresh-interval: ${STATION_DISCOVERY_REFRESH_INTERVAL:5s}  # Interval to refresh peer nodes list
+
+  # Coordination Configuration
+  coordination:
+    consistent-hash:
+      virtual-nodes: ${STATION_COORDINATION_VIRTUAL_NODES:150}
+    # Note: Replication feature not yet implemented
+    # replication:
+    #   enabled: false
+    #   factor: 2
+    lock:
+      ttl: ${STATION_COORDINATION_LOCK_TTL:30s}
+      wait-timeout: ${STATION_COORDINATION_LOCK_WAIT_TIMEOUT:10s}
+
+  # Eviction Configuration
+  eviction:
+    enabled: ${STATION_EVICTION_ENABLED:true}
+    check-interval: ${STATION_EVICTION_CHECK_INTERVAL:1h}
+    threshold: ${STATION_EVICTION_THRESHOLD:90}  # percentage
+
+# gRPC Configuration
+grpc:
+  server:
+    port: ${STATION_GRPC_PORT:50051}
+    max-inbound-message-size: ${GRPC_SERVER_MAX_INBOUND_MESSAGE_SIZE:104857600}  # 100MB
+    keepalive-time: ${GRPC_SERVER_KEEPALIVE_TIME:30s}
+    keepalive-timeout: ${GRPC_SERVER_KEEPALIVE_TIMEOUT:10s}
+    permit-keepalive-without-calls: ${GRPC_SERVER_PERMIT_KEEPALIVE:true}
+  client:
+    GLOBAL:
+      negotiation-type: ${GRPC_CLIENT_NEGOTIATION_TYPE:plaintext}
+      max-inbound-message-size: ${GRPC_CLIENT_MAX_INBOUND_MESSAGE_SIZE:104857600}  # 100MB
+      keep-alive-time: ${GRPC_CLIENT_KEEPALIVE_TIME:30s}
+      keep-alive-timeout: ${GRPC_CLIENT_KEEPALIVE_TIMEOUT:10s}
+
+# Management & Actuator
+management:
+  endpoints:
+    web:
+      base-path: ${MANAGEMENT_ENDPOINTS_BASE_PATH:/actuator}
+      exposure:
+        include: ${MANAGEMENT_ENDPOINTS_EXPOSURE:health,metrics,prometheus,info,startup}
+  endpoint:
+    health:
+      probes:
+        enabled: ${MANAGEMENT_HEALTH_PROBES_ENABLED:true}
+      show-details: ${MANAGEMENT_HEALTH_SHOW_DETAILS:when-authorized}
+
+
+  metrics:
+    tags:
+      application: ${spring.application.name}
+      node: ${station.node.id}
+    distribution:
+      percentiles-histogram:
+        http.server.requests: ${MANAGEMENT_METRICS_HTTP_HISTOGRAM:true}
+        grpc.server.requests: ${MANAGEMENT_METRICS_GRPC_HISTOGRAM:true}
+
+  health:
+    diskspace:
+      enabled: ${MANAGEMENT_HEALTH_DISKSPACE_ENABLED:true}
+      path: ${station.storage.base-path:./data/station}
+      threshold: ${MANAGEMENT_HEALTH_DISKSPACE_THRESHOLD:10GB}
+  prometheus:
+    metrics:
+      export:
+        enabled: ${MANAGEMENT_PROMETHEUS_ENABLED:true}
+
+# Logging Configuration
+logging:
+  level:
+    root: INFO
+    com.dingdangmaoup.station: DEBUG
+    io.grpc: INFO
+    io.lettuce.core: INFO
+    org.springframework.web: INFO
+    org.springframework.data.redis: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"

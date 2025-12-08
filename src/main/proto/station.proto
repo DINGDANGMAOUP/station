@@ -1,0 +1,100 @@
+syntax = "proto3";
+
+package com.dingdangmaoup.station.grpc;
+
+option java_multiple_files = true;
+option java_package = "com.dingdangmaoup.station.grpc";
+option java_outer_classname = "StationProto";
+
+// Station Service for inter-node communication
+service StationService {
+  // Check if node has a manifest
+  rpc HasManifest(ManifestRequest) returns (ManifestResponse);
+
+  // Get manifest from node (with streaming for large manifests)
+  rpc GetManifest(ManifestRequest) returns (stream ManifestData);
+
+  // Check if node has a blob
+  rpc HasBlob(BlobRequest) returns (BlobResponse);
+
+  // Stream blob from node
+  rpc GetBlob(BlobRequest) returns (stream BlobData);
+
+  // Health check
+  rpc HealthCheck(HealthCheckRequest) returns (HealthCheckResponse);
+
+  // Get node information
+  rpc GetNodeInfo(NodeInfoRequest) returns (NodeInfoResponse);
+}
+
+// Manifest related messages
+message ManifestRequest {
+  string repository = 1;
+  string reference = 2;  // tag or digest
+}
+
+message ManifestResponse {
+  bool exists = 1;
+  string digest = 2;
+  int64 size = 3;
+  string content_type = 4;
+}
+
+message ManifestData {
+  bytes chunk = 1;
+  string content_type = 2;
+  string digest = 3;
+}
+
+// Blob related messages
+message BlobRequest {
+  string digest = 1;
+  int64 offset = 2;
+  int64 length = 3;
+}
+
+message BlobResponse {
+  bool exists = 1;
+  int64 size = 2;
+}
+
+message BlobData {
+  bytes chunk = 1;
+  int64 offset = 2;
+}
+
+// Health check messages
+message HealthCheckRequest {
+  // empty for now
+}
+
+message HealthCheckResponse {
+  enum Status {
+    UNKNOWN = 0;
+    HEALTHY = 1;
+    UNHEALTHY = 2;
+    DRAINING = 3;
+  }
+
+  Status status = 1;
+  int32 cache_usage_percent = 2;
+  int64 requests_per_second = 3;
+  int64 total_cached_blobs = 4;
+  int64 total_cached_bytes = 5;
+}
+
+// Node info messages
+message NodeInfoRequest {
+  // empty for now
+}
+
+message NodeInfoResponse {
+  string node_id = 1;
+  string host = 2;
+  int32 grpc_port = 3;
+  int32 http_port = 4;
+  int64 uptime_seconds = 5;
+  int64 total_cached_bytes = 6;
+  int64 total_cached_blobs = 7;
+  int64 available_storage_bytes = 8;
+}

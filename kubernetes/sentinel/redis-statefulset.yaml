@@ -1,0 +1,135 @@
+---
+# Redis Sentinel StatefulSet
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: redis-sentinel
+  namespace: station
+  labels:
+    app: redis
+    mode: sentinel
+spec:
+  serviceName: redis-sentinel
+  replicas: 3
+  selector:
+    matchLabels:
+      app: redis
+      mode: sentinel
+  template:
+    metadata:
+      labels:
+        app: redis
+        mode: sentinel
+    spec:
+      initContainers:
+      - name: config
+        image: redis:7.4-alpine
+        command:
+        - sh
+        - -c
+        - |
+          if [ "$(hostname)" = "redis-sentinel-0" ]; then
+            cp /tmp/redis/master.conf /etc/redis/redis.conf
+          else
+            cp /tmp/redis/replica.conf /etc/redis/redis.conf
+          fi
+          cp /tmp/redis/sentinel.conf /etc/redis/sentinel.conf
+        volumeMounts:
+        - name: config
+          mountPath: /tmp/redis
+        - name: redis-config
+          mountPath: /etc/redis
+      containers:
+      - name: redis
+        image: redis:7.4-alpine
+        ports:
+        - containerPort: 6379
+          name: redis
+          protocol: TCP
+        command:
+          - redis-server
+          - /etc/redis/redis.conf
+        volumeMounts:
+        - name: redis-config
+          mountPath: /etc/redis
+        - name: data
+          mountPath: /data
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+        livenessProbe:
+          tcpSocket:
+            port: 6379
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          exec:
+            command:
+            - redis-cli
+            - ping
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+
+      - name: sentinel
+        image: redis:7.4-alpine
+        ports:
+        - containerPort: 26379
+          name: sentinel
+          protocol: TCP
+        command:
+          - redis-sentinel
+          - /etc/redis/sentinel.conf
+        volumeMounts:
+        - name: redis-config
+          mountPath: /etc/redis
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+        livenessProbe:
+          tcpSocket:
+            port: 26379
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          exec:
+            command:
+            - redis-cli
+            - -p
+            - "26379"
+            - ping
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+
+      volumes:
+      - name: config
+        configMap:
+          name: redis-sentinel-config
+      - name: redis-config
+        emptyDir: {}
+
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes:
+        - ReadWriteOnce
+      resources:
+        requests:
+          storage: 10Gi
+      storageClassName: standard

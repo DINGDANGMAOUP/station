@@ -1,0 +1,103 @@
+[versions]
+# Spring
+spring-boot = "4.0.0"
+spring-dependency-management = "1.1.7"
+spring-cloud = "2025.1.0"
+
+# gRPC & Protocol Buffers
+grpc = "1.77.0"
+grpc-spring-boot-starter = "3.1.0.RELEASE"
+protobuf = "4.33.2"
+reactor-grpc = "1.2.4"
+protobuf-plugin = "0.9.5"
+
+# Caching
+caffeine = "3.2.3"
+
+
+# Monitoring
+micrometer = "1.14.2"
+
+# Testing
+testcontainers = "1.20.4"
+wiremock = "3.13.2"
+
+# Utilities
+commons-codec = "1.20.0"
+commons-io = "2.21.0"
+jackson-datatype-jsr310 = "2.20.1"
+
+# Lombok
+lombok = "1.18.42"
+
+[libraries]
+# Spring Boot Starters
+spring-boot-starter = { module = "org.springframework.boot:spring-boot-starter" }
+spring-boot-starter-webflux = { module = "org.springframework.boot:spring-boot-starter-webflux" }
+spring-boot-starter-actuator = { module = "org.springframework.boot:spring-boot-starter-actuator" }
+spring-boot-starter-data-redis-reactive = { module = "org.springframework.boot:spring-boot-starter-data-redis-reactive" }
+spring-boot-starter-validation = { module = "org.springframework.boot:spring-boot-starter-validation" }
+spring-boot-devtools = { module = "org.springframework.boot:spring-boot-devtools" }
+spring-boot-configuration-processor = { module = "org.springframework.boot:spring-boot-configuration-processor" }
+
+# Spring Cloud Kubernetes
+spring-cloud-bom = { module = "org.springframework.cloud:spring-cloud-dependencies", version.ref = "spring-cloud" }
+spring-cloud-starter-kubernetes-client = { module = "org.springframework.cloud:spring-cloud-starter-kubernetes-client" }
+spring-cloud-starter-kubernetes-client-config = { module = "org.springframework.cloud:spring-cloud-starter-kubernetes-client-config" }
+
+# gRPC
+grpc-netty = { module = "io.grpc:grpc-netty", version.ref = "grpc" }
+grpc-core = { module = "io.grpc:grpc-core", version.ref = "grpc" }
+grpc-protobuf = { module = "io.grpc:grpc-protobuf", version.ref = "grpc" }
+grpc-stub = { module = "io.grpc:grpc-stub", version.ref = "grpc" }
+grpc-services = { module = "io.grpc:grpc-services", version.ref = "grpc" }
+grpc-spring-boot-starter = { module = "net.devh:grpc-spring-boot-starter", version.ref = "grpc-spring-boot-starter" }
+grpc-server-spring-boot-starter = { module = "net.devh:grpc-server-spring-boot-starter", version.ref = "grpc-spring-boot-starter" }
+grpc-client-spring-boot-starter = { module = "net.devh:grpc-client-spring-boot-starter", version.ref = "grpc-spring-boot-starter" }
+reactor-grpc-stub = { module = "com.salesforce.servicelibs:reactor-grpc-stub", version.ref = "reactor-grpc" }
+
+# Protocol Buffers
+protobuf-java = { module = "com.google.protobuf:protobuf-java", version.ref = "protobuf" }
+protobuf-java-util = { module = "com.google.protobuf:protobuf-java-util", version.ref = "protobuf" }
+
+# Caching
+caffeine = { module = "com.github.ben-manes.caffeine:caffeine", version.ref = "caffeine" }
+
+# Kubernetes Client (version managed by Spring Cloud BOM)
+kubernetes-client = { module = "io.fabric8:kubernetes-client" }
+
+# Monitoring
+micrometer-registry-prometheus = { module = "io.micrometer:micrometer-registry-prometheus" }
+micrometer-tracing-bridge-otel = { module = "io.micrometer:micrometer-tracing-bridge-otel" }
+
+# Utilities
+commons-codec = { module = "commons-codec:commons-codec", version.ref = "commons-codec" }
+commons-io = { module = "commons-io:commons-io", version.ref = "commons-io" }
+jackson-datatype-jsr310 = { module = "com.fasterxml.jackson.datatype:jackson-datatype-jsr310", version.ref = "jackson-datatype-jsr310" }
+
+# Lombok
+lombok = { module = "org.projectlombok:lombok", version.ref = "lombok" }
+
+# Testing
+spring-boot-starter-test = { module = "org.springframework.boot:spring-boot-starter-test" }
+reactor-test = { module = "io.projectreactor:reactor-test" }
+testcontainers-bom = { module = "org.testcontainers:testcontainers-bom", version.ref = "testcontainers" }
+testcontainers-junit-jupiter = { module = "org.testcontainers:junit-jupiter" }
+testcontainers = { module = "org.testcontainers:testcontainers" }
+wiremock-standalone = { module = "org.wiremock:wiremock-standalone", version.ref = "wiremock" }
+grpc-testing = { module = "io.grpc:grpc-testing", version.ref = "grpc" }
+junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
+
+[bundles]
+spring-boot = ["spring-boot-starter-webflux", "spring-boot-starter-actuator", "spring-boot-starter-data-redis-reactive", "spring-boot-starter-validation"]
+grpc = ["grpc-core","grpc-netty", "grpc-protobuf", "grpc-stub", "grpc-services", "reactor-grpc-stub"]
+grpc-spring = ["grpc-server-spring-boot-starter", "grpc-client-spring-boot-starter"]
+kubernetes = ["spring-cloud-starter-kubernetes-client", "spring-cloud-starter-kubernetes-client-config", "kubernetes-client"]
+monitoring = ["micrometer-registry-prometheus", "micrometer-tracing-bridge-otel"]
+utilities = ["commons-codec", "commons-io", "caffeine", "jackson-datatype-jsr310"]
+testing = ["spring-boot-starter-test", "reactor-test", "testcontainers-junit-jupiter", "testcontainers", "grpc-testing"]
+
+[plugins]
+spring-boot = { id = "org.springframework.boot", version.ref = "spring-boot" }
+spring-dependency-management = { id = "io.spring.dependency-management", version.ref = "spring-dependency-management" }
+protobuf = { id = "com.google.protobuf", version.ref = "protobuf-plugin" }

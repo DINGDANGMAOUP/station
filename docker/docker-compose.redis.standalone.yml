@@ -1,0 +1,252 @@
+version: '3.8'
+
+services:
+  # Redis standalone for distributed caching
+  redis:
+    image: redis:7-alpine
+    container_name: station-redis
+    command: redis-server --appendonly yes
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - station-network
+
+  # Station node 1
+  station-1:
+    image: ghcr.io/dingdangmaoup/station:latest
+    container_name: station-node-1
+    hostname: station-node-1
+    environment:
+      # Node Configuration
+      - HOSTNAME=station-node-1
+      - STATION_GRPC_PORT=50051
+      - STATION_HTTP_PORT=5000
+
+      # Redis Configuration
+      - STATION_REDIS_MODE=standalone
+      - STATION_REDIS_HOST=redis
+      - STATION_REDIS_PORT=6379
+      - STATION_REDIS_PASSWORD=
+      - STATION_REDIS_DATABASE=0
+      - STATION_REDIS_TIMEOUT=5s
+
+      # Discovery Configuration
+      - STATION_DISCOVERY_TYPE=redis
+      - STATION_DISCOVERY_HEARTBEAT_INTERVAL=10s
+      - STATION_DISCOVERY_REFRESH_INTERVAL=5s
+      - STATION_DISCOVERY_REDIS_MAX_ATTEMPTS=6
+      - STATION_DISCOVERY_REDIS_INITIAL_BACKOFF=5s
+      - STATION_DISCOVERY_REDIS_MAX_BACKOFF=10s
+      - STATION_DISCOVERY_REDIS_NODE_TIMEOUT=30s
+
+      # Storage Configuration
+      - STATION_STORAGE_PATH=/data/station
+      - STATION_STORAGE_BLOB_CHUNK_SIZE=65536
+
+      # Cache Configuration
+      - STATION_CACHE_LOCAL_MAX_SIZE=1GB
+      - STATION_CACHE_LOCAL_MAX_ENTRIES=10000
+      - STATION_CACHE_LOCAL_TTL=1h
+      - STATION_CACHE_REDIS_MANIFEST_TTL=24h
+      - STATION_CACHE_REDIS_BLOB_TTL=168h
+
+      # Coordination Configuration
+      - STATION_COORDINATION_VIRTUAL_NODES=150
+      - STATION_COORDINATION_LOCK_TTL=30s
+      - STATION_COORDINATION_LOCK_WAIT_TIMEOUT=10s
+
+      # Eviction Configuration
+      - STATION_EVICTION_ENABLED=true
+      - STATION_EVICTION_CHECK_INTERVAL=1h
+      - STATION_EVICTION_THRESHOLD=90
+
+      # Logging Configuration
+      - STATION_REQUEST_LOGGING=false
+      - STATION_INCLUDE_HEADERS=false
+
+      # JVM Options
+      - JAVA_OPTS=-Xms1g -Xmx1g
+    ports:
+      - "5001:5000"
+      - "50051:50051"
+    volumes:
+      - station-1-data:/data/station
+    networks:
+      - station-network
+    depends_on:
+      - redis
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/actuator/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 40s
+
+  # Station node 2
+  station-2:
+    image: ghcr.io/dingdangmaoup/station:latest
+    container_name: station-node-2
+    hostname: station-node-2
+    environment:
+      # Node Configuration
+      - HOSTNAME=station-node-2
+      - STATION_GRPC_PORT=50051
+      - STATION_HTTP_PORT=5000
+
+      # Redis Configuration
+      - STATION_REDIS_MODE=standalone
+      - STATION_REDIS_HOST=redis
+      - STATION_REDIS_PORT=6379
+      - STATION_REDIS_PASSWORD=
+      - STATION_REDIS_DATABASE=0
+      - STATION_REDIS_TIMEOUT=5s
+
+      # Discovery Configuration
+      - STATION_DISCOVERY_TYPE=redis
+      - STATION_DISCOVERY_HEARTBEAT_INTERVAL=10s
+      - STATION_DISCOVERY_REFRESH_INTERVAL=5s
+      - STATION_DISCOVERY_REDIS_MAX_ATTEMPTS=6
+      - STATION_DISCOVERY_REDIS_INITIAL_BACKOFF=5s
+      - STATION_DISCOVERY_REDIS_MAX_BACKOFF=10s
+      - STATION_DISCOVERY_REDIS_NODE_TIMEOUT=30s
+
+      # Storage Configuration
+      - STATION_STORAGE_PATH=/data/station
+      - STATION_STORAGE_BLOB_CHUNK_SIZE=65536
+
+      # Cache Configuration
+      - STATION_CACHE_LOCAL_MAX_SIZE=1GB
+      - STATION_CACHE_LOCAL_MAX_ENTRIES=10000
+      - STATION_CACHE_LOCAL_TTL=1h
+      - STATION_CACHE_REDIS_MANIFEST_TTL=24h
+      - STATION_CACHE_REDIS_BLOB_TTL=168h
+
+      # Coordination Configuration
+      - STATION_COORDINATION_VIRTUAL_NODES=150
+      - STATION_COORDINATION_LOCK_TTL=30s
+      - STATION_COORDINATION_LOCK_WAIT_TIMEOUT=10s
+
+      # Eviction Configuration
+      - STATION_EVICTION_ENABLED=true
+      - STATION_EVICTION_CHECK_INTERVAL=1h
+      - STATION_EVICTION_THRESHOLD=90
+
+      # Logging Configuration
+      - STATION_REQUEST_LOGGING=false
+      - STATION_INCLUDE_HEADERS=false
+
+      # JVM Options
+      - JAVA_OPTS=-Xms1g -Xmx1g
+    ports:
+      - "5002:5000"
+      - "50052:50051"
+    volumes:
+      - station-2-data:/data/station
+    networks:
+      - station-network
+    depends_on:
+      - redis
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/actuator/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 40s
+
+  # Station node 3
+  station-3:
+    image: ghcr.io/dingdangmaoup/station:latest
+    container_name: station-node-3
+    hostname: station-node-3
+    environment:
+      # Node Configuration
+      - HOSTNAME=station-node-3
+      - STATION_GRPC_PORT=50051
+      - STATION_HTTP_PORT=5000
+
+      # Redis Configuration
+      - STATION_REDIS_MODE=standalone
+      - STATION_REDIS_HOST=redis
+      - STATION_REDIS_PORT=6379
+      - STATION_REDIS_PASSWORD=
+      - STATION_REDIS_DATABASE=0
+      - STATION_REDIS_TIMEOUT=5s
+
+      # Discovery Configuration
+      - STATION_DISCOVERY_TYPE=redis
+      - STATION_DISCOVERY_HEARTBEAT_INTERVAL=10s
+      - STATION_DISCOVERY_REFRESH_INTERVAL=5s
+      - STATION_DISCOVERY_REDIS_MAX_ATTEMPTS=6
+      - STATION_DISCOVERY_REDIS_INITIAL_BACKOFF=5s
+      - STATION_DISCOVERY_REDIS_MAX_BACKOFF=10s
+      - STATION_DISCOVERY_REDIS_NODE_TIMEOUT=30s
+
+      # Storage Configuration
+      - STATION_STORAGE_PATH=/data/station
+      - STATION_STORAGE_BLOB_CHUNK_SIZE=65536
+
+      # Cache Configuration
+      - STATION_CACHE_LOCAL_MAX_SIZE=1GB
+      - STATION_CACHE_LOCAL_MAX_ENTRIES=10000
+      - STATION_CACHE_LOCAL_TTL=1h
+      - STATION_CACHE_REDIS_MANIFEST_TTL=24h
+      - STATION_CACHE_REDIS_BLOB_TTL=168h
+
+      # Coordination Configuration
+      - STATION_COORDINATION_VIRTUAL_NODES=150
+      - STATION_COORDINATION_LOCK_TTL=30s
+      - STATION_COORDINATION_LOCK_WAIT_TIMEOUT=10s
+
+      # Eviction Configuration
+      - STATION_EVICTION_ENABLED=true
+      - STATION_EVICTION_CHECK_INTERVAL=1h
+      - STATION_EVICTION_THRESHOLD=90
+
+      # Logging Configuration
+      - STATION_REQUEST_LOGGING=false
+      - STATION_INCLUDE_HEADERS=false
+
+      # JVM Options
+      - JAVA_OPTS=-Xms1g -Xmx1g
+    ports:
+      - "5003:5000"
+      - "50053:50051"
+    volumes:
+      - station-3-data:/data/station
+    networks:
+      - station-network
+    depends_on:
+      - redis
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/actuator/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 40s
+
+  # Nginx load balancer
+  nginx:
+    image: nginx:alpine
+    container_name: station-nginx
+    ports:
+      - "9000:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    networks:
+      - station-network
+    depends_on:
+      - station-1
+      - station-2
+      - station-3
+
+volumes:
+  redis-data:
+  station-1-data:
+  station-2-data:
+  station-3-data:
+
+networks:
+  station-network:
+    driver: bridge

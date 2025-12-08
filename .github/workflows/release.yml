@@ -1,0 +1,206 @@
+name: Release
+
+permissions:
+  contents: read
+  packages: write
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v6
+      with:
+        fetch-depth: 0
+
+    - name: Set up Java 21
+      uses: actions/setup-java@v5
+      with:
+        java-version: '21'
+        distribution: 'temurin'
+        cache: gradle
+
+    - name: Grant execute permission for gradlew
+      run: chmod +x gradlew
+
+    - name: Build release JAR
+      run: ./gradlew clean build -x test
+
+    - name: Generate deployment manifests
+      run: |
+        # Generate standalone mode manifests (Development/Testing)
+        cat kubernetes/base/namespace.yaml \
+            kubernetes/base/rbac.yaml \
+            kubernetes/base/secret.yaml \
+            kubernetes/standalone/redis-config.yaml \
+            kubernetes/standalone/redis-deployment.yaml \
+            kubernetes/standalone/redis-service.yaml \
+            kubernetes/standalone/station-config.yaml \
+            kubernetes/standalone/station-statefulset.yaml \
+            kubernetes/standalone/station-service.yaml > kubernetes-standalone.yaml
+
+        # Generate sentinel mode manifests (Production - Recommended)
+        cat kubernetes/base/namespace.yaml \
+            kubernetes/base/rbac.yaml \
+            kubernetes/base/secret.yaml \
+            kubernetes/sentinel/redis-config.yaml \
+            kubernetes/sentinel/redis-statefulset.yaml \
+            kubernetes/sentinel/redis-service.yaml \
+            kubernetes/sentinel/station-config.yaml \
+            kubernetes/sentinel/station-statefulset.yaml \
+            kubernetes/standalone/station-service.yaml > kubernetes-sentinel.yaml
+
+        # Generate cluster mode manifests (High-Performance Production)
+        cat kubernetes/base/namespace.yaml \
+            kubernetes/base/rbac.yaml \
+            kubernetes/base/secret.yaml \
+            kubernetes/cluster/redis-config.yaml \
+            kubernetes/cluster/redis-init-job.yaml \
+            kubernetes/cluster/redis-statefulset.yaml \
+            kubernetes/cluster/redis-service.yaml \
+            kubernetes/cluster/station-config.yaml \
+            kubernetes/cluster/station-statefulset.yaml \
+            kubernetes/standalone/station-service.yaml > kubernetes-cluster.yaml
+
+        # Copy docker-compose files for local development
+        cp docker/docker-compose.redis.standalone.yml docker-compose-standalone.yml
+        cp docker/docker-compose.redis.sentinel.yml docker-compose-sentinel.yml
+        cp docker/docker-compose.redis.cluster.yml docker-compose-cluster.yml
+
+    - name: Get version from tag
+      id: version
+      run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+    - name: Create release notes
+      id: release_notes
+      run: |
+        cat > release_notes.md << 'EOF'
+        ## What's Changed
+
+        This release includes various improvements and bug fixes.
+
+        ### Installation Options
+
+        #### Docker Compose (Local Development)
+
+        **Standalone Mode** (Quick start):
+        ```bash
+        wget https://github.com/dingdangmaoup/station/releases/download/v${{ steps.version.outputs.VERSION }}/docker-compose-standalone.yml
+        docker-compose -f docker-compose-standalone.yml up -d
+        ```
+
+        **Sentinel Mode** (High availability):
+        ```bash
+        wget https://github.com/dingdangmaoup/station/releases/download/v${{ steps.version.outputs.VERSION }}/docker-compose-sentinel.yml
+        docker-compose -f docker-compose-sentinel.yml up -d
+        ```
+
+        **Cluster Mode** (High performance):
+        ```bash
+        wget https://github.com/dingdangmaoup/station/releases/download/v${{ steps.version.outputs.VERSION }}/docker-compose-cluster.yml
+        docker-compose -f docker-compose-cluster.yml up -d
+        ```
+
+        #### Docker Image
+        ```bash
+        docker pull ghcr.io/dingdangmaoup/station:${{ steps.version.outputs.VERSION }}
+        ```
+
+        #### Kubernetes - Standalone Mode (Development/Testing)
+        Single Redis instance, suitable for development and testing environments.
+        ```bash
+        kubectl apply -f https://github.com/dingdangmaoup/station/releases/download/v${{ steps.version.outputs.VERSION }}/kubernetes-standalone.yaml
+        ```
+
+        #### Kubernetes - Sentinel Mode (Production - Recommended)
+        Redis Sentinel for high availability, recommended for production use.
+        ```bash
+        kubectl apply -f https://github.com/dingdangmaoup/station/releases/download/v${{ steps.version.outputs.VERSION }}/kubernetes-sentinel.yaml
+        ```
+
+        #### Kubernetes - Cluster Mode (High-Performance Production)
+        Redis Cluster for maximum performance and scalability.
+        ```bash
+        kubectl apply -f https://github.com/dingdangmaoup/station/releases/download/v${{ steps.version.outputs.VERSION }}/kubernetes-cluster.yaml
+        ```
+
+        ### Changelog
+        EOF
+        git log $(git describe --tags --abbrev=0 HEAD^)..HEAD --pretty=format:"- %s (%h)" >> release_notes.md
+
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v2
+      with:
+        body_path: release_notes.md
+        files: |
+          build/libs/*.jar
+          docker-compose-standalone.yml
+          docker-compose-sentinel.yml
+          docker-compose-cluster.yml
+          kubernetes-standalone.yaml
+          kubernetes-sentinel.yaml
+          kubernetes-cluster.yaml
+        draft: false
+        prerelease: ${{ contains(github.ref, 'alpha') || contains(github.ref, 'beta') || contains(github.ref, 'rc') }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  docker:
+    name: Build and Push Docker Image
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v6
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to GitHub Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ghcr.io/${{ github.repository_owner }}/station
+        tags: |
+          type=semver,pattern={{version}}
+          type=semver,pattern={{major}}.{{minor}}
+          type=semver,pattern={{major}}
+          type=sha
+
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v6
+      with:
+        context: .
+        platforms: linux/amd64,linux/arm64
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        github-token: '${{ secrets.GITHUB_TOKEN }}'
+
+    - name: Update Docker Hub description
+      uses: peter-evans/dockerhub-description@v5
+      if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+        repository: ${{ secrets.DOCKER_USERNAME }}/station
+        readme-filepath: ./README.md
+      continue-on-error: true

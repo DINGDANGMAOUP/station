@@ -1,0 +1,71 @@
+---
+# Station ConfigMap for Standalone Mode
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: station-config-standalone
+  namespace: station
+  labels:
+    app: station
+    redis-mode: standalone
+data:
+  # Node Configuration
+  STATION_GRPC_PORT: "50051"
+  STATION_HTTP_PORT: "5000"
+
+  # Redis Configuration
+  STATION_REDIS_MODE: "standalone"
+  STATION_REDIS_HOST: "redis-standalone.station.svc.cluster.local"
+  STATION_REDIS_PORT: "6379"
+  STATION_REDIS_DATABASE: "0"
+  STATION_REDIS_TIMEOUT: "5s"
+
+  # Discovery Configuration
+  STATION_DISCOVERY_TYPE: "kubernetes"
+  STATION_K8S_LABEL_SELECTOR: "app=station,redis-mode=standalone"
+  KUBERNETES_NAMESPACE: "station"
+  STATION_DISCOVERY_HEARTBEAT_INTERVAL: "10s"
+  STATION_DISCOVERY_REFRESH_INTERVAL: "5s"
+
+  # Storage Configuration
+  STATION_STORAGE_PATH: "/data/station"
+  STATION_STORAGE_BLOB_CHUNK_SIZE: "65536"
+
+  # Cache Configuration
+  STATION_CACHE_LOCAL_MAX_SIZE: "1GB"
+  STATION_CACHE_LOCAL_MAX_ENTRIES: "10000"
+  STATION_CACHE_LOCAL_TTL: "1h"
+  STATION_CACHE_REDIS_MANIFEST_TTL: "24h"
+  STATION_CACHE_REDIS_BLOB_TTL: "168h"
+
+  # Docker Hub Configuration
+  STATION_DOCKER_HUB_URL: "https://registry-1.docker.io"
+  STATION_DOCKER_AUTH_URL: "https://auth.docker.io"
+  STATION_DOCKER_TIMEOUT: "30s"
+  STATION_DOCKER_RETRY_MAX_ATTEMPTS: "3"
+  STATION_DOCKER_RETRY_BACKOFF_DELAY: "1s"
+
+  # Coordination Configuration
+  STATION_COORDINATION_VIRTUAL_NODES: "150"
+  STATION_COORDINATION_LOCK_TTL: "30s"
+  STATION_COORDINATION_LOCK_WAIT_TIMEOUT: "10s"
+
+  # Eviction Configuration
+  STATION_EVICTION_ENABLED: "true"
+  STATION_EVICTION_CHECK_INTERVAL: "1h"
+  STATION_EVICTION_THRESHOLD: "90"
+
+  # Logging Configuration
+  STATION_REQUEST_LOGGING: "false"
+  STATION_INCLUDE_HEADERS: "false"
+
+  # gRPC Configuration
+  GRPC_SERVER_MAX_INBOUND_MESSAGE_SIZE: "104857600"
+  GRPC_SERVER_KEEPALIVE_TIME: "30s"
+  GRPC_SERVER_KEEPALIVE_TIMEOUT: "10s"
+  GRPC_SERVER_PERMIT_KEEPALIVE: "true"
+  GRPC_CLIENT_NEGOTIATION_TYPE: "plaintext"
+  GRPC_CLIENT_MAX_INBOUND_MESSAGE_SIZE: "104857600"
+  GRPC_CLIENT_KEEPALIVE_TIME: "30s"
+  GRPC_CLIENT_KEEPALIVE_TIMEOUT: "10s"
+
