@@ -68,14 +68,14 @@ dependencies {
 
 protobuf {
     protoc {
-        artifact = "com.google.protobuf:protoc:4.29.2"
+        artifact = "com.google.protobuf:protoc:4.33.2"
     }
     plugins {
         id("grpc") {
             artifact = "io.grpc:protoc-gen-grpc-java:1.77.0"
         }
         id("reactor-grpc") {
-            artifact = "com.salesforce.servicelibs:reactor-grpc:1.2.4"
+            artifact = "com.salesforce.servicelibs:reactor-grpc:${libs.versions.reactor.grpc.get()}"
         }
     }
     generateProtoTasks {
