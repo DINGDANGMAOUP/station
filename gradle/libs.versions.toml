@@ -19,7 +19,7 @@ caffeine = "3.2.3"
 micrometer = "1.14.2"
 
 # Testing
-testcontainers = "1.20.4"
+testcontainers = "2.0.2"
 wiremock = "3.13.2"
 
 # Utilities
@@ -82,7 +82,7 @@ lombok = { module = "org.projectlombok:lombok", version.ref = "lombok" }
 spring-boot-starter-test = { module = "org.springframework.boot:spring-boot-starter-test" }
 reactor-test = { module = "io.projectreactor:reactor-test" }
 testcontainers-bom = { module = "org.testcontainers:testcontainers-bom", version.ref = "testcontainers" }
-testcontainers-junit-jupiter = { module = "org.testcontainers:junit-jupiter" }
+testcontainers-junit-jupiter = { module = "org.testcontainers:testcontainers-junit-jupiter" }
 testcontainers = { module = "org.testcontainers:testcontainers" }
 wiremock-standalone = { module = "org.wiremock:wiremock-standalone", version.ref = "wiremock" }
 grpc-testing = { module = "io.grpc:grpc-testing", version.ref = "grpc" }
