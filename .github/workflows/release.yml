@@ -77,6 +77,9 @@ jobs:
         cp docker/docker-compose.redis.sentinel.yml docker-compose-sentinel.yml
         cp docker/docker-compose.redis.cluster.yml docker-compose-cluster.yml
 
+        # Copy nginx configuration file
+        cp docker/nginx/nginx.conf nginx.conf
+
     - name: Get version from tag
       id: version
       run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
@@ -92,6 +95,13 @@ jobs:
         ### Installation Options
 
         #### Docker Compose (Local Development)
+
+        **Important:** All Docker Compose deployments require the nginx configuration file. Download it first:
+        ```bash
+        # Create nginx directory and download configuration
+        mkdir -p nginx
+        wget -O nginx/nginx.conf https://github.com/dingdangmaoup/station/releases/download/v${{ steps.version.outputs.VERSION }}/nginx.conf
+        ```
 
         **Standalone Mode** (Quick start):
         ```bash
@@ -147,6 +157,7 @@ jobs:
           docker-compose-standalone.yml
           docker-compose-sentinel.yml
           docker-compose-cluster.yml
+          nginx.conf
           kubernetes-standalone.yaml
           kubernetes-sentinel.yaml
           kubernetes-cluster.yaml

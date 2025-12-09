@@ -18,8 +18,8 @@ RUN gradle clean build -x test --no-daemon
 # Stage 2: Runtime
 FROM openjdk:21-ea-slim
 
-LABEL maintainer="Station Team"
-LABEL description="Distributed Docker Hub Cache Mirror"
+LABEL maintainer="dingdangmaoup"
+LABEL description="Docker Hub cache registry"
 
 # Create app user
 RUN groupadd -r station && useradd -r -g station station

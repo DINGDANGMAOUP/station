@@ -103,7 +103,7 @@ spec:
           failureThreshold: 3
         startupProbe:
           httpGet:
-            path: /actuator/health/startup
+            path: /actuator/startup
             port: 5000
           initialDelaySeconds: 15
           periodSeconds: 5
