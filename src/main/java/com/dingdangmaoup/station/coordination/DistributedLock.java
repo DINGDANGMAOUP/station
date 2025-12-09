@@ -16,96 +16,105 @@ import java.time.Duration;
 @Component
 public class DistributedLock {
 
-    private final ReactiveRedisTemplate<String, String> reactiveRedisTemplate;
-    private final Duration lockTtl;
-    private final Duration waitTimeout;
+  private final ReactiveRedisTemplate<String, String> reactiveRedisTemplate;
+  private final Duration lockTtl;
+  private final Duration waitTimeout;
 
-    @Value("${station.node.id}")
-    private String nodeId;
+  @Value("${station.node.id}")
+  private String nodeId;
 
-    public DistributedLock(ReactiveRedisTemplate<String, String> reactiveRedisTemplate,
-                           CoordinationProperties coordinationProperties) {
-        this.reactiveRedisTemplate = reactiveRedisTemplate;
-        this.lockTtl = coordinationProperties.getLock().getTtl();
-        this.waitTimeout = coordinationProperties.getLock().getWaitTimeout();
-    }
+  public DistributedLock(ReactiveRedisTemplate<String, String> reactiveRedisTemplate,
+      CoordinationProperties coordinationProperties) {
+    this.reactiveRedisTemplate = reactiveRedisTemplate;
+    this.lockTtl = coordinationProperties.getLock().getTtl();
+    this.waitTimeout = coordinationProperties.getLock().getWaitTimeout();
+  }
 
-    /**
-     * Acquire a distributed lock
-     */
-    public Mono<Boolean> acquireLock(String lockKey) {
-        String redisKey = "lock:" + lockKey;
-        return reactiveRedisTemplate.opsForValue()
-                .setIfAbsent(redisKey, nodeId, lockTtl)
-                .doOnNext(acquired -> {
-                    if (acquired) {
-                        log.debug("Acquired lock: {} by node: {}", lockKey, nodeId);
-                    } else {
-                        log.debug("Failed to acquire lock: {} (held by another node)", lockKey);
-                    }
+  /**
+   * Acquire a distributed lock
+   */
+  public Mono<Boolean> acquireLock(String lockKey) {
+    String redisKey = "lock:" + lockKey;
+    return reactiveRedisTemplate.opsForValue()
+        .setIfAbsent(redisKey, nodeId, lockTtl)
+        .doOnNext(acquired -> {
+          if (acquired) {
+            log.debug("Acquired lock: {} by node: {}", lockKey, nodeId);
+          } else {
+            log.debug("Failed to acquire lock: {} (held by another node)", lockKey);
+          }
+        });
+  }
+
+  /**
+   * Release a distributed lock
+   */
+  public Mono<Boolean> releaseLock(String lockKey) {
+    String redisKey = "lock:" + lockKey;
+    return reactiveRedisTemplate.opsForValue()
+        .get(redisKey)
+        .flatMap(owner -> {
+          if (nodeId.equals(owner)) {
+            return reactiveRedisTemplate.delete(redisKey)
+                .map(count -> count > 0)
+                .doOnNext(released -> {
+                  if (released) {
+                    log.debug("Released lock: {} by node: {}", lockKey, nodeId);
+                  }
                 });
+          } else {
+            log.warn("Cannot release lock: {} (owned by: {}, current: {})",
+                lockKey, owner, nodeId);
+            return Mono.just(false);
+          }
+        })
+        .defaultIfEmpty(false);
+  }
+
+  /**
+   * Attempts to acquire a distributed lock for the given lock key.
+   *
+   */
+  public Mono<Boolean> tryAcquireLock(String lockKey) {
+    return tryAcquireLock(lockKey, waitTimeout);
+  }
+
+  /**
+   * Try to acquire lock with retry
+   */
+  public Mono<Boolean> tryAcquireLock(String lockKey, Duration timeout) {
+    return acquireLock(lockKey)
+        .flatMap(acquired -> {
+          if (acquired) {
+            return Mono.just(true);
+          }
+
+          return Mono.delay(Duration.ofMillis(100))
+              .flatMap(tick -> tryAcquireLock(lockKey, timeout.minus(Duration.ofMillis(100))))
+              .timeout(timeout)
+              .onErrorReturn(false);
+        });
+  }
+
+  /**
+   * Execute action with lock
+   */
+  public <T> Mono<T> withLock(String lockKey, Mono<T> action) {
+    return acquireLock(lockKey)
+        .flatMap(acquired -> {
+          if (!acquired) {
+            return Mono.error(new LockException("Failed to acquire lock: " + lockKey));
+          }
+
+          return action
+              .doFinally(signalType -> releaseLock(lockKey).subscribe());
+        });
+  }
+
+  public static class LockException extends RuntimeException {
+
+    public LockException(String message) {
+      super(message);
     }
-
-    /**
-     * Release a distributed lock
-     */
-    public Mono<Boolean> releaseLock(String lockKey) {
-        String redisKey = "lock:" + lockKey;
-        return reactiveRedisTemplate.opsForValue()
-                .get(redisKey)
-                .flatMap(owner -> {
-                    if (nodeId.equals(owner)) {
-                        return reactiveRedisTemplate.delete(redisKey)
-                                .map(count -> count > 0)
-                                .doOnNext(released -> {
-                                    if (released) {
-                                        log.debug("Released lock: {} by node: {}", lockKey, nodeId);
-                                    }
-                                });
-                    } else {
-                        log.warn("Cannot release lock: {} (owned by: {}, current: {})",
-                                lockKey, owner, nodeId);
-                        return Mono.just(false);
-                    }
-                })
-                .defaultIfEmpty(false);
-    }
-
-    /**
-     * Try to acquire lock with retry
-     */
-    public Mono<Boolean> tryAcquireLock(String lockKey, Duration timeout) {
-        return acquireLock(lockKey)
-                .flatMap(acquired -> {
-                    if (acquired) {
-                        return Mono.just(true);
-                    }
-
-                    return Mono.delay(Duration.ofMillis(100))
-                            .flatMap(tick -> tryAcquireLock(lockKey, timeout.minus(Duration.ofMillis(100))))
-                            .timeout(timeout)
-                            .onErrorReturn(false);
-                });
-    }
-
-    /**
-     * Execute action with lock
-     */
-    public <T> Mono<T> withLock(String lockKey, Mono<T> action) {
-        return acquireLock(lockKey)
-                .flatMap(acquired -> {
-                    if (!acquired) {
-                        return Mono.error(new LockException("Failed to acquire lock: " + lockKey));
-                    }
-
-                    return action
-                            .doFinally(signalType -> releaseLock(lockKey).subscribe());
-                });
-    }
-
-    public static class LockException extends RuntimeException {
-        public LockException(String message) {
-            super(message);
-        }
-    }
+  }
 }
