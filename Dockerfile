@@ -16,7 +16,7 @@ COPY src ./src
 RUN gradle clean build -x test --no-daemon
 
 # Stage 2: Runtime
-FROM openjdk:21-ea-slim
+FROM openjdk:28-ea-slim
 
 LABEL maintainer="dingdangmaoup"
 LABEL description="Docker Hub cache registry"
