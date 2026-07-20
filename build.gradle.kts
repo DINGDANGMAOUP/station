@@ -72,7 +72,7 @@ protobuf {
     }
     plugins {
         id("grpc") {
-            artifact = "io.grpc:protoc-gen-grpc-java:1.79.0"
+            artifact = "io.grpc:protoc-gen-grpc-java:1.82.2"
         }
         id("reactor-grpc") {
             artifact = "com.salesforce.servicelibs:reactor-grpc:${libs.versions.reactor.grpc.get()}"
